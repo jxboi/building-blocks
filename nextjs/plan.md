@@ -29,6 +29,25 @@ apps/web/
 └── src/styles/
 ```
 
+## Help & knowledge seam (content lives elsewhere, links live here)
+- **Help registry:** nav/feature registrations may carry a `helpUrl`; a help menu (user menu + `?` overlay) surfaces the current route's article plus global links (docs home, shortcuts, "send feedback" — feedback plan). Empty states and complex settings screens render "Learn more →" from the same registry.
+- **Content is deliberately external** — a docs site, Notion, or a future product wiki; the shell never hosts help articles (that's a CMS). The registry is provider-agnostic URLs, so swapping the knowledge base touches one file.
+- *If a product's feature is a wiki/KB* (tenant-facing pages, trees, versions), it's a vertical like tasks/queues — it would compose files, search registration, ACLs, comments/mentions patterns, and register its pages' URLs back into this seam. Real-time co-editing remains rejected (see state-change conventions).
+
+## Design system (the consistency contract)
+Not a separate package or Figma dependency — a layered, enforced system inside the app:
+
+- **Token architecture (two layers):** *primitive* tokens (raw palette, type scale, spacing scale, radii, shadows, motion durations) → *semantic* tokens (`--background`, `--muted`, `--destructive`, `--radius-card`, `--duration-fast`) consumed by all components. Both themes (light/dark) defined at the semantic layer; **brand swap = editing the primitive layer + logo** — nothing else moves. Charts, status colors, and email templates draw from the same semantic names.
+- **Scales are closed sets:** type (5 sizes), spacing (Tailwind's scale, but components use a documented subset), radius (3), elevation (3), motion (2 durations + reduced-motion). Arbitrary values (`mt-[13px]`, hex colors) fail lint.
+- **Component tiers, dependency one-way:**
+  1. *Primitives* — shadcn/ui + Radix (`components/ui/`): never edited ad hoc; customisation happens via tokens or wrapping;
+  2. *Shell kits* — form kit, data table, filter kit, dashboard kit, upload kit, `<Img>`, `StatusBadge`, `EmptyState`, `ActivityFeed`, banner slot, confirmation dialog, people/team picker, schedule editor, sharing dialog (`components/kit/`);
+  3. *Domain components* — feature-owned compositions of tiers 1–2 (`components/domain/`, or the feature's folder).
+  A tier may only import from tiers below it; product code composes tiers 2–3 and should rarely touch tier 1 directly.
+- **Living catalogue instead of Storybook:** a dev-only **`/design` route** renders every token (with contrast checks) and every kit component in all states (loading/empty/error/disabled, both themes, mobile width) — zero extra toolchain, always true because it imports the real components. Playwright runs axe against it; visual drift shows up in review as a diff to one page.
+- **Enforcement (lint + review, not memory):** ESLint rules ban raw `<img>`/`<button>`/hex colors/off-scale values/unregistered icons; the existing conventions (messaging-surface hierarchy, disabled-vs-hidden, icon+label, skeleton-matching) are the review checklist, linked from `CONTRIBUTING.md`.
+- **Copy rules live with the system:** sentence case everywhere, error-copy guidelines (error-handling plan), i18n keys mandatory — terminology glossary (one name per concept: "workspace" never "project") kept beside the tokens.
+
 ## Navigation & information architecture
 - **Nav registry (the frontend's module-registration pattern):** sidebar and settings navigation are assembled from registered nav items — `{ label key, icon, href, feature key, scope: workspace | org | user }`. Core modules register their entries (settings pages, approvals, reports…); product features append theirs; items auto-resolve through `useFeature(key)` (flag ∧ entitlement ∧ org toggle ∧ permission — feature-flags plan) and hide or render an upgrade state accordingly. Nobody edits the sidebar component to add a page.
 - **Layout:** left sidebar (workspace-scoped product nav + pinned items) with org/workspace switcher at top and user menu at bottom; slim top bar per page (breadcrumbs, page actions, search trigger, notification bell). Admin console has its own sidebar built from the same registry mechanism (admin sections registry, per admin-console plan).
@@ -78,6 +97,7 @@ Every response carries a `X-Build-Id` header (injected at image build, docker-de
 ## Filter kit (customisable list filtering)
 - **Declarative per list:** each list/table declares its filters as typed definitions — `enum` (status, type), `entity` (person/team picker), `date-range`, `boolean`, `text` — and the shared filter bar renders them: add-filter menu → chips with inline editing → clear-all. Server-side filtering only (definitions map to query params of the list endpoint); the client never filters a partial dataset.
 - **URL is the filter state:** active filters serialize to query params — shareable/bookmarkable views, back-button friendly, SSR-consistent. Component state never diverges from the URL.
+- **Date facets support rolling windows** (`next 7/14/30 days`, `last week/month`, `this month`) — stored symbolically in saved views so a "birthdays in the next 14 days" view stays correct forever, not frozen to the dates it was saved on.
 - **Saved views (per user):** name the current filter+sort combination; stored via the settings registry (user scope, keyed by list id — no new table, no sharing). Org-shared saved views are a deliberate non-goal until a product needs them.
 - Consumers from day one: members list, audit log, files, notifications, admin lists — the kit is proven on shell lists before products inherit it.
 - **Export view:** every filter-kit list carries an "Export…" action handing the current facets/sort/columns to the reports pipeline's generic list export (reports plan) — the filtered view *is* the report definition.
@@ -119,7 +139,7 @@ Every response carries a `X-Build-Id` header (injected at image build, docker-de
 Marketing/landing pages, native apps, complex client caching strategy beyond TanStack Query defaults.
 
 ## Milestones
-1. Scaffold app, Tailwind, shadcn, layout shell, dark mode.
+1. Scaffold app, Tailwind, shadcn, layout shell, dark mode — token architecture + `/design` route + lint rules from day one (retrofitting a design system is the expensive path).
 2. BFF auth proxy + session handling + route guards.
 3. Typed API client generation in CI.
 4. Org/workspace shell (switcher, settings pages skeleton).
@@ -135,7 +155,16 @@ Standard pieces for product/admin dashboards so inheriting projects assemble ins
 - **Components:** `StatTile` (value, delta, spark-line), `TimeSeriesChart`, `BarList`/breakdown, `DateRangePicker` (presets + org-timezone aware), dashboard grid layout, and matching loading/empty/error states.
 - **API convention:** dashboards consume **server-aggregated, typed endpoints** (`/api/v1/.../stats?from=&to=&bucket=`) returning pre-bucketed series — never raw rows aggregated client-side. Bucketing respects the org's timezone (`org_setting`). Each feature ships its own stats endpoints; there is no generic metrics-query API (that's the rejected BI engine).
 - **Consumers:** admin console dashboard is the reference implementation; product dashboards in inheriting projects use the same kit.
-- **Non-goals:** user-configurable layouts/widgets, saved custom charts, cross-entity ad-hoc queries.
+
+### User-composed dashboards (widgets from a registry — composition, not authoring)
+- **Widget registry:** modules/verticals register widget *types* with typed param schemas — the same declare-once pattern as report types. Three **generic widgets ship with the shell** and cover most requests with zero product code:
+  1. **Saved-view count** — any saved view → a stat tile (count + deep link into the filtered list), optional warn/alert thresholds coloring the tile;
+  2. **Saved-view list** — top-N rows of a saved view (columns from its selection);
+  3. **Metric trend** — any registered `daily_metrics` key (+ dimension) over a period → sparkline/line tile.
+  Products add richer bespoke widgets (a pipeline funnel, a queue wallboard tile) by registering components — users configure params, never define data.
+- **Dashboards:** per-user **and** per-workspace (shared, `dashboard.manage` to edit) — add/remove/reorder widgets, three sizes (S/M/L), simple flow grid (no free-form drag-anywhere designer). Layout persists via the settings registry (user/workspace scope).
+- **Security is inherited:** every widget executes server-side under the viewer's permissions/feature gates — a shared workspace dashboard shows each viewer only what *they* may see (a widget the viewer can't access renders its no-permission state, consistent with the disabled-vs-hidden convention).
+- **Non-goals (the line that keeps this from becoming BI):** user-authored widgets, ad-hoc queries/formula fields, cross-entity joins, free-form canvas layouts, external data sources. If a user's need can't be expressed as a saved view, a registered metric, or a product widget's params — it's a feature request for the vertical, not a dashboard capability.
 
 ## Removal/extension notes for inheriting projects
 Product pages live under `(app)/[workspace]/`; core shell files should not need edits. Theme tokens in one file; brand swap is a token + logo change.

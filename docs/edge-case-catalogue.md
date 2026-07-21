@@ -211,6 +211,15 @@ Companion: `stress-test-2026-07-16.md` (the original 48-scenario review). Conven
 | FB4 | Feedback spam | Per-user rate cap (settings registry); demo mode: feedback disabled | feedback |
 | FB5 | Submitter's account deleted before resolution | Anonymised tombstone (standard erasure); item retained for triage, notifications cease | feedback + auth |
 
+### Trend/history addenda
+
+| # | Scenario | Expected | Mechanism |
+|---|---|---|---|
+| H1 | "Open tasks in March?" asked in July, metric registered in January | Answerable — snapshots accumulated since registration | daily_metrics |
+| H2 | Same question, metric registered in June | Honest gap — snapshots start at registration, no backfill; charts label the series start | daily_metrics |
+| H3 | "What did this record look like on date X" | Not a snapshot question — audit before/after diffs where evented; full temporal versioning rejected | audit-logs |
+| H4 | Org purged | Its rollup/metric rows purge with the cascade; platform-level aggregates recompute | tenancy |
+
 ## 16. Open edges (known-unspecified — specify before or during build)
 - Q6 above (queue subject deletion) — proposed behaviour written, needs confirmation at build.
 - Entity-rule sweeps on very large orgs (100k+ members): batch sizing/pacing declared but unmeasured — needs a load test at milestone.
