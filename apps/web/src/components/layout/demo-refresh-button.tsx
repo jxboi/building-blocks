@@ -32,7 +32,7 @@ export function DemoRefreshButton({
       onClick={() => setIsRefreshing(true)}
     >
       <RefreshCw
-        className={cn("size-3.5 transition-transform duration-200", isRefreshing && "animate-spin")}
+        className={cn("size-3.5 transition-transform duration-(--duration-slow)", isRefreshing && "animate-spin")}
         aria-hidden="true"
       />
       <span key={isRefreshing ? "busy" : "idle"} className="state-enter">

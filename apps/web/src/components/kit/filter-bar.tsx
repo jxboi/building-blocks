@@ -3,6 +3,7 @@
 import type { Route } from "next";
 import { Download, Filter, Save, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,8 +21,9 @@ export type FilterDefinition = {
   options?: readonly { label: string; value: string }[];
 };
 
-export function FilterBar({ definitions }: { definitions: readonly FilterDefinition[] }) {
+export function FilterBar({ definitions, disabled = false }: { definitions: readonly FilterDefinition[]; disabled?: boolean }) {
   const router = useRouter();
+  const t = useTranslations("common");
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const active = definitions.filter((definition) => searchParams.has(definition.id));
@@ -34,12 +36,12 @@ export function FilterBar({ definitions }: { definitions: readonly FilterDefinit
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2 shadow-sm">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-card p-2">
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" disabled={disabled}>
             <Filter className="size-4" />
-            Add filter
+            {t("addFilter")}
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="start">
@@ -62,22 +64,23 @@ export function FilterBar({ definitions }: { definitions: readonly FilterDefinit
             size="icon-xs"
             className="-mr-1"
             onClick={() => setFilter(definition.id)}
+            disabled={disabled}
           >
             <X className="size-3" />
-            <span className="sr-only">Remove {definition.label} filter</span>
+            <span className="sr-only">{t("removeFilter", { label: definition.label })}</span>
           </Button>
         </Badge>
       ))}
       <div className="ml-auto flex items-center gap-1">
         {active.length ? (
-          <Button variant="ghost" size="sm" onClick={() => router.replace(pathname as Route)}>
-            Clear all
+          <Button variant="ghost" size="sm" disabled={disabled} onClick={() => router.replace(pathname as Route)}>
+            {t("clearAll")}
           </Button>
         ) : null}
-        <Button variant="ghost" size="icon" aria-label="Save this view">
+        <Button variant="ghost" size="icon" aria-label={t("saveView")} disabled={disabled}>
           <Save className="size-4" />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Export this view">
+        <Button variant="ghost" size="icon" aria-label={t("exportView")} disabled={disabled}>
           <Download className="size-4" />
         </Button>
       </div>

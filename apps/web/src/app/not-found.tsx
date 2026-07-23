@@ -9,7 +9,7 @@ export default async function NotFound() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="max-w-md text-center">
-        <span className="mx-auto mb-6 flex size-14 items-center justify-center rounded-lg border bg-card shadow-sm">
+        <span className="mx-auto mb-6 flex size-14 items-center justify-center rounded-lg border bg-card">
           <MapPinOff className="size-6 text-muted-foreground" aria-hidden="true" />
         </span>
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">404</p>

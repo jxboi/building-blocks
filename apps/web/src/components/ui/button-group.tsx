@@ -3,10 +3,12 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 /**
- * Joins a row of buttons into one segmented control. The attribute-scoped
- * radius overrides (`[&>[data-slot=button]]`) beat the button's own utilities,
- * so buttons of any size join cleanly. Best with the `outline` or `secondary`
- * button variants.
+ * Joins a row of controls into one segmented cluster. Targets every direct
+ * child carrying a `data-slot` — so plain buttons, split-button dropdown
+ * triggers (`data-slot="dropdown-menu-trigger"`), and inputs all join cleanly —
+ * and the attribute-scoped radius overrides beat each child's own utilities.
+ * Best with the `outline` or `secondary` variants (consistent borders form the
+ * dividers). Overlapping borders via `-ml-px` collapse to a single 1px divider.
  */
 function ButtonGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
@@ -14,7 +16,7 @@ function ButtonGroup({ className, ...props }: React.ComponentProps<"div">) {
       role="group"
       data-slot="button-group"
       className={cn(
-        "flex w-fit items-center rounded-md shadow-xs [&>[data-slot=button]]:relative [&>[data-slot=button]]:rounded-none [&>[data-slot=button]]:shadow-none [&>[data-slot=button]:not(:first-child)]:-ml-px [&>[data-slot=button]:first-child]:rounded-l-md [&>[data-slot=button]:last-child]:rounded-r-md [&>[data-slot=button]:hover]:z-10 [&>[data-slot=button]:focus-visible]:z-10",
+        "flex w-fit items-center rounded-md [&>[data-slot]]:relative [&>[data-slot]]:rounded-none [&>[data-slot]]:shadow-none [&>[data-slot]:not(:first-child)]:-ml-px [&>[data-slot]:first-child]:rounded-l-md [&>[data-slot]:last-child]:rounded-r-md [&>[data-slot]:hover]:z-10 [&>[data-slot]:focus-visible]:z-10",
         className
       )}
       {...props}

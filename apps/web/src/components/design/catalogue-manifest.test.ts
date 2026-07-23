@@ -4,6 +4,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { KIT_IDS } from "./catalogue-manifest";
+import { KIT_STATE_KINDS, kitCatalogue } from "./kit-catalogue";
 
 const kitRoot = path.join(process.cwd(), "src", "components", "kit");
 
@@ -33,5 +34,24 @@ describe("design catalogue is exhaustive", () => {
   it("has no manifest entries without a source file", () => {
     const stale = [...KIT_IDS].filter((id) => !discovered.includes(id));
     expect(stale, "manifest ids with no matching component file").toEqual([]);
+  });
+
+  it("records every lifecycle state as shown or explicitly not applicable", () => {
+    for (const id of KIT_IDS) {
+      const entry = kitCatalogue[id];
+      expect(Object.keys(entry.coverage).sort(), `${id} has incomplete state coverage`).toEqual(
+        [...KIT_STATE_KINDS].sort(),
+      );
+
+      const shown = new Set(entry.states.map((state) => state.kind));
+      for (const kind of KIT_STATE_KINDS) {
+        const decision = entry.coverage[kind];
+        if (decision === "shown") {
+          expect(shown.has(kind), `${id} claims to show ${kind} but has no matching specimen`).toBe(true);
+        } else {
+          expect(decision.notApplicable.trim().length, `${id} needs a reason why ${kind} is not applicable`).toBeGreaterThan(0);
+        }
+      }
+    }
   });
 });

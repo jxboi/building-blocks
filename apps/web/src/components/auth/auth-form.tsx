@@ -61,7 +61,7 @@ export function AuthForm({ kind }: { kind: AuthKind }) {
   }
 
   return (
-    <Card className="w-full max-w-md shadow-lg">
+    <Card className="w-full max-w-md">
       <CardHeader className="gap-3">
         <div className="flex size-10 items-center justify-center rounded-lg border bg-muted">
           {kind === "verifyEmail" || kind === "invite" ? (

@@ -1,7 +1,9 @@
 "use client";
 
-import { AlignCenter, AlignLeft, AlignRight, Bold, ChevronDown, Copy, Italic, Pencil, Trash2, Underline } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, ChevronDown, Copy, Download, Italic, Pencil, Trash2, Underline } from "lucide-react";
 import { useState } from "react";
+
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -135,19 +137,52 @@ export function ControlsCatalogue() {
             </SelectContent>
           </Select>
         </Spec>
-        <Spec label="Button group">
+        <Spec label="Button group · segmented">
           <ButtonGroup>
             {["day", "week", "month"].map((value) => (
               <Button
                 key={value}
-                variant={range === value ? "secondary" : "outline"}
+                variant="outline"
                 aria-pressed={range === value}
                 onClick={() => setRange(value)}
-                className="capitalize"
+                className={cn(
+                  "capitalize",
+                  range === value ? "bg-accent font-medium text-accent-foreground" : "text-muted-foreground"
+                )}
               >
                 {value}
               </Button>
             ))}
+          </ButtonGroup>
+        </Spec>
+        <Spec label="Button group · split & toolbar">
+          <ButtonGroup>
+            <Button variant="outline">
+              <Download />
+              Export
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" aria-label="Export options">
+                  <ChevronDown />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>Export as CSV</DropdownMenuItem>
+                <DropdownMenuItem>Export as PDF</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </ButtonGroup>
+          <ButtonGroup>
+            <Button variant="outline" size="icon" aria-label="Align left">
+              <AlignLeft />
+            </Button>
+            <Button variant="outline" size="icon" aria-label="Align center">
+              <AlignCenter />
+            </Button>
+            <Button variant="outline" size="icon" aria-label="Align right">
+              <AlignRight />
+            </Button>
           </ButtonGroup>
         </Spec>
         <Spec label="Dropdown menu">
@@ -186,7 +221,7 @@ export function ControlsCatalogue() {
           <TimePicker value={time} onChange={setTime} />
         </Spec>
         <Spec label="Inline calendar">
-          <Calendar selected={date} onSelect={setDate} className="rounded-lg border bg-card shadow-xs" />
+          <Calendar selected={date} onSelect={setDate} className="rounded-lg border bg-card" />
         </Spec>
       </Section>
     </div>

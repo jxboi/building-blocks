@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared build settings come from apps/api/Directory.Build.props. -->
+  <ItemGroup>
+    <!-- The module contract and pipeline touch ASP.NET Core routing / DI types. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation" Version="11.9.2" />
+  </ItemGroup>
+
+</Project>

@@ -20,8 +20,22 @@ import { TableRowActions } from "@/components/kit/table-row-actions";
 import { Input } from "@/components/ui/input";
 import { KIT_IDS, type KitId } from "@/components/design/catalogue-manifest";
 
-export type KitState = { label: string; node: ReactNode };
-export type KitEntry = { title: string; description: string; states: readonly KitState[] };
+export const KIT_STATE_KINDS = ["default", "loading", "empty", "error", "disabled", "permission"] as const;
+export type KitStateKind = (typeof KIT_STATE_KINDS)[number];
+export type KitState = { kind: KitStateKind; label: string; node: ReactNode };
+export type KitStateCoverage = Record<KitStateKind, "shown" | { notApplicable: string }>;
+export type KitEntry = {
+  title: string;
+  description: string;
+  states: readonly KitState[];
+  coverage: KitStateCoverage;
+};
+
+function coverage(shown: readonly KitStateKind[], notApplicable: string): KitStateCoverage {
+  return Object.fromEntries(
+    KIT_STATE_KINDS.map((kind) => [kind, shown.includes(kind) ? "shown" : { notApplicable }]),
+  ) as KitStateCoverage;
+}
 
 type SampleRow = { id: string; name: string; owner: string; status: ShellStatus };
 const sampleRows: readonly SampleRow[] = [
@@ -77,88 +91,112 @@ export const kitCatalogue: Record<KitId, KitEntry> = {
   "status-badge": {
     title: "StatusBadge",
     description: "Maps an API status enum to a label, colour, and icon — shape plus icon, never colour alone.",
-    states: [{ label: "Every status", node: <div className="flex flex-wrap gap-2">{allStatuses.map((status) => <StatusBadge key={status} status={status} />)}</div> }],
+    states: [{ kind: "default", label: "Every status", node: <div className="flex flex-wrap gap-2">{allStatuses.map((status) => <StatusBadge key={status} status={status} />)}</div> }],
+    coverage: coverage(["default"], "Status badges render a value; collection lifecycle states do not apply."),
   },
   "inline-alert": {
     title: "InlineAlert",
     description: "Contextual messaging that lives in the content flow and never auto-dismisses.",
     states: [
-      { label: "Info", node: <InlineAlert title="Useful context" description="Information supports the task without interrupting it." /> },
-      { label: "Success", node: <InlineAlert title="Everything is healthy" description="Confirms a durable state change." severity="success" /> },
-      { label: "Warning", node: <InlineAlert title="Review required" description="Stays until the condition is resolved." severity="warning" /> },
-      { label: "Error", node: <InlineAlert title="Unable to save" description="Tells the person what happened and what to do next." severity="error" /> },
+      { kind: "default", label: "Info", node: <InlineAlert title="Useful context" description="Information supports the task without interrupting it." /> },
+      { kind: "default", label: "Success", node: <InlineAlert title="Everything is healthy" description="Confirms a durable state change." severity="success" /> },
+      { kind: "default", label: "Warning", node: <InlineAlert title="Review required" description="Stays until the condition is resolved." severity="warning" /> },
+      { kind: "error", label: "Error", node: <InlineAlert title="Unable to save" description="Tells the person what happened and what to do next." severity="error" /> },
     ],
+    coverage: coverage(["default", "error"], "Alerts communicate a supplied condition; loading, empty, disabled, and permission states are caller content."),
   },
   "empty-state": {
     title: "EmptyState",
     description: "Three distinct variants — no data yet, no results, no permission — never conflated.",
     states: [
-      { label: "No data yet", node: <EmptyState title="No data yet" description="Create the first item to begin this workflow." actionLabel="Create item" /> },
-      { label: "No results", node: <EmptyState variant="results" title="No matching results" description="Try removing a filter or changing the search terms." actionLabel="Clear filters" /> },
-      { label: "No permission", node: <EmptyState variant="permission" title="Permission required" description="An owner can grant access through a registered role." actionLabel="Request access" /> },
+      { kind: "empty", label: "No data yet", node: <EmptyState title="No data yet" description="Create the first item to begin this workflow." actionLabel="Create item" /> },
+      { kind: "empty", label: "No results", node: <EmptyState variant="results" title="No matching results" description="Try removing a filter or changing the search terms." actionLabel="Clear filters" /> },
+      { kind: "permission", label: "No permission", node: <EmptyState variant="permission" title="Permission required" description="An owner can grant access through a registered role." actionLabel="Request access" /> },
     ],
+    coverage: coverage(["empty", "permission"], "EmptyState is itself a terminal collection state; default, loading, error, and disabled are separate compositions."),
   },
   "form-field": {
     title: "FormField",
     description: "Labelled field wrapper wiring description and error ids for assistive tech.",
     states: [
-      { label: "Default", node: <FormField id="kit-name" label="Workspace name" description="Shown across the product."><Input id="kit-name" placeholder="Acme" /></FormField> },
-      { label: "With error", node: <FormField id="kit-slug" label="Workspace slug" error={{ type: "validate", message: "Use lowercase letters and dashes." }}><Input id="kit-slug" aria-invalid defaultValue="Bad Slug" /></FormField> },
+      { kind: "default", label: "Default", node: <FormField id="kit-name" label="Workspace name" description="Shown across the product."><Input id="kit-name" placeholder="Acme" /></FormField> },
+      { kind: "error", label: "With error", node: <FormField id="kit-slug" label="Workspace slug" error={{ type: "validate", message: "Use lowercase letters and dashes." }}><Input id="kit-slug" defaultValue="Bad Slug" /></FormField> },
+      { kind: "disabled", label: "Disabled", node: <FormField id="kit-locked" label="Workspace name" description="Managed by your organisation."><Input id="kit-locked" disabled defaultValue="Acme" /></FormField> },
     ],
+    coverage: coverage(["default", "error", "disabled"], "A field has no standalone loading, empty, or permission state."),
   },
   "data-table": {
     title: "DataTable",
     description: "Responsive table that collapses to row-cards on mobile via per-column priority hints.",
-    states: [{ label: "Populated", node: <DataTable rows={sampleRows} columns={sampleColumns} rowActions={[{ label: "View details" }, { label: "Archive" }]} /> }],
+    states: [
+      { kind: "default", label: "Populated", node: <DataTable rows={sampleRows} columns={sampleColumns} rowActions={[{ label: "View details" }, { label: "Archive" }]} /> },
+      { kind: "loading", label: "Loading", node: <PageSkeleton /> },
+      { kind: "empty", label: "Empty", node: <EmptyState title="No data yet" description="Create the first item to populate this table." actionLabel="Create item" /> },
+      { kind: "error", label: "Error", node: <InlineAlert severity="error" title="Unable to load items" description="Try again, or use the correlation ID when contacting support." /> },
+      { kind: "permission", label: "No permission", node: <EmptyState variant="permission" title="Permission required" description="Ask a workspace owner for access." actionLabel="Request access" /> },
+    ],
+    coverage: coverage(["default", "loading", "empty", "error", "permission"], "Rows are actions, not form controls; a disabled table state does not apply."),
   },
   "table-row-actions": {
     title: "TableRowActions",
     description: "The per-row overflow menu; the same action list backs the right-click context menu.",
-    states: [{ label: "Menu", node: <div className="flex justify-start"><TableRowActions labels={["View details", "Duplicate", "Archive"]} /></div> }],
+    states: [{ kind: "default", label: "Menu", node: <div className="flex justify-start"><TableRowActions labels={["View details", "Duplicate", "Archive"]} /></div> }],
+    coverage: coverage(["default"], "Row actions render only for an available row; collection lifecycle states do not apply."),
   },
   "filter-bar": {
     title: "FilterBar",
     description: "Declarative list filtering that serialises to the URL — shareable, SSR-consistent views.",
-    states: [{ label: "Default", node: <FilterBar definitions={filterDefinitions} /> }],
+    states: [
+      { kind: "default", label: "Default", node: <FilterBar definitions={filterDefinitions} /> },
+      { kind: "disabled", label: "Disabled", node: <FilterBar definitions={filterDefinitions} disabled /> },
+    ],
+    coverage: coverage(["default", "disabled"], "The filter bar remains structurally present while its owning collection renders lifecycle states."),
   },
   "confirmation-dialog": {
     title: "ConfirmationDialog",
     description: "Shared destructive confirmation; the irreversible tier requires typing the entity name.",
-    states: [{ label: "Name-typing", node: <ConfirmationDialog title="Delete Product?" description="This action cannot be undone after the grace period." triggerLabel="Delete workspace" confirmationText="Product" /> }],
+    states: [{ kind: "default", label: "Name-typing", node: <ConfirmationDialog title="Delete Product?" description="This action cannot be undone after the grace period." triggerLabel="Delete workspace" confirmationText="Product" /> }],
+    coverage: coverage(["default"], "Confirmation dialogs are invoked only for an available action; collection lifecycle states do not apply."),
   },
   img: {
     title: "Img",
     description: "The only sanctioned image wrapper — enforces dimensions, lazy loading, and private variants.",
-    states: [{ label: "Avatar", node: <Img src={avatarSrc} alt="Member avatar" width={96} height={96} className="rounded-lg border" /> }],
+    states: [{ kind: "default", label: "Avatar", node: <Img src={avatarSrc} alt="Member avatar" width={96} height={96} className="rounded-lg border" /> }],
+    coverage: coverage(["default"], "Image loading and failure behavior is owned by the browser and file-status consumer."),
   },
   "page-skeleton": {
     title: "PageSkeleton",
     description: "Route-level loading shape that matches the final layout — no spinner-only pages.",
-    states: [{ label: "Loading", node: <div className="overflow-hidden rounded-lg border bg-card"><PageSkeleton /></div> }],
+    states: [{ kind: "loading", label: "Loading", node: <div className="overflow-hidden rounded-lg border bg-card"><PageSkeleton /></div> }],
+    coverage: coverage(["loading"], "PageSkeleton represents loading only; other states use their dedicated kit components."),
   },
   "dashboard/stat-tile": {
     title: "StatTile",
     description: "Headline metric with a trend direction; part of the developer-assembled dashboard kit.",
     states: [
-      { label: "Up", node: <div className="max-w-56 rounded-lg border"><StatTile label="Active members" value="1,284" detail="+12% vs last month" trend="up" icon={Users} /></div> },
-      { label: "Down", node: <div className="max-w-56 rounded-lg border"><StatTile label="Open incidents" value="3" detail="-40% vs last week" trend="down" icon={Activity} /></div> },
-      { label: "Neutral", node: <div className="max-w-56 rounded-lg border"><StatTile label="Pending invites" value="17" detail="No change" trend="neutral" icon={Clock3} /></div> },
+      { kind: "default", label: "Up", node: <div className="max-w-56 rounded-lg border"><StatTile label="Active members" value="1,284" detail="+12% vs last month" trend="up" icon={Users} /></div> },
+      { kind: "default", label: "Down", node: <div className="max-w-56 rounded-lg border"><StatTile label="Open incidents" value="3" detail="-40% vs last week" trend="down" icon={Activity} /></div> },
+      { kind: "default", label: "Neutral", node: <div className="max-w-56 rounded-lg border"><StatTile label="Pending invites" value="17" detail="No change" trend="neutral" icon={Clock3} /></div> },
     ],
+    coverage: coverage(["default"], "Dashboard-level loading, empty, error, and permission states wrap the assembled widget grid."),
   },
   "dashboard/time-series-chart": {
     title: "TimeSeriesChart",
     description: "Recharts line chart themed by the same CSS variables, so light and dark come for free.",
-    states: [{ label: "Trend", node: <div className="rounded-lg border p-4"><TimeSeriesChart data={trendData} /></div> }],
+    states: [{ kind: "default", label: "Trend", node: <div className="rounded-lg border p-4"><TimeSeriesChart data={trendData} /></div> }],
+    coverage: coverage(["default"], "Dashboard-level lifecycle states wrap the assembled widget grid."),
   },
   "dashboard/bar-list": {
     title: "BarList",
     description: "Ranked breakdown with proportional bars for compact categorical comparisons.",
-    states: [{ label: "Breakdown", node: <div className="max-w-md rounded-lg border p-4"><BarList items={breakdown} /></div> }],
+    states: [{ kind: "default", label: "Breakdown", node: <div className="max-w-md rounded-lg border p-4"><BarList items={breakdown} /></div> }],
+    coverage: coverage(["default"], "Dashboard-level lifecycle states wrap the assembled widget grid."),
   },
   "dashboard/date-range-picker": {
     title: "DateRangePicker",
     description: "Preset-driven range control; presets stay correct over time and respect the org timezone.",
-    states: [{ label: "Presets", node: <DateRangePicker /> }],
+    states: [{ kind: "default", label: "Presets", node: <DateRangePicker /> }],
+    coverage: coverage(["default"], "The range picker is omitted when unavailable; collection lifecycle states do not apply."),
   },
 };
 

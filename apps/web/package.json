@@ -19,7 +19,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
-    "api:generate": "openapi-typescript openapi/shell.openapi.json -o src/lib/api/schema.d.ts",
+    "api:generate": "openapi-typescript openapi/v1.json -o src/lib/api/schema.d.ts",
     "check": "npm run api:generate && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {

@@ -21,39 +21,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { readContrastAudit } from "@/lib/design/contrast-audit";
 import { glossary } from "@/lib/design/glossary";
+import { SPACING_STEPS } from "@/lib/design/scale";
+import { FOUNDATION_TOKEN_GROUPS, SEMANTIC_COLOUR_TOKENS, TYPE_SCALE } from "@/lib/design/tokens";
 
-const typeScale = [
-  ["text-2xl", "Title", "24px — page titles, one per screen"],
-  ["text-xl", "Heading", "20px — section and card headings"],
-  ["text-base", "Body", "16px — primary reading copy and inputs"],
-  ["text-sm", "Label", "14px — controls, table cells, secondary text"],
-  ["text-xs", "Caption", "12px — metadata, timestamps, eyebrows"],
-] as const;
-
-// The documented spacing subset (Tailwind steps) components may use.
-const spacingSubset = [
-  ["1", "0.25rem"],
-  ["2", "0.5rem"],
-  ["3", "0.75rem"],
-  ["4", "1rem"],
-  ["6", "1.5rem"],
-  ["8", "2rem"],
-  ["10", "2.5rem"],
-  ["12", "3rem"],
-] as const;
-
-const colourTokens = [
-  ["Background", "bg-background", "--background"],
-  ["Card", "bg-card", "--card"],
-  ["Primary", "bg-primary", "--primary"],
-  ["Secondary", "bg-secondary", "--secondary"],
-  ["Muted", "bg-muted", "--muted"],
-  ["Accent", "bg-accent", "--accent"],
-  ["Success", "bg-success", "--success"],
-  ["Warning", "bg-warning", "--warning"],
-  ["Destructive", "bg-destructive", "--destructive"],
-  ["Info", "bg-info", "--info"],
-] as const;
+// The documented spacing subset — derived from the single-source SPACING_STEPS
+// the lint rule enforces, so the specimen can never drift from the rule.
+const spacingSubset = SPACING_STEPS.filter((step) => step > 0).map(
+  (step) => [String(step), `${step * 0.25}rem`] as const,
+);
 
 type CatalogueRow = { id: string; name: string; owner: string; status: ShellStatus };
 const columns: readonly DataColumn<CatalogueRow>[] = [
@@ -70,14 +45,45 @@ const rows: readonly CatalogueRow[] = [
 function TokenGrid() {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-      {colourTokens.map(([label, className, token]) => (
-        <div key={label} className="group overflow-hidden rounded-lg border bg-card shadow-xs transition-shadow duration-200 hover:shadow-sm">
-          <div className={`h-16 ${className}`} />
+      {SEMANTIC_COLOUR_TOKENS.map(([label, token]) => (
+        <div key={label} className="group overflow-hidden rounded-lg border bg-card transition-colors duration-(--duration-slow) hover:border-foreground/20">
+          <div className="h-16" style={{ backgroundColor: `var(${token})` }} />
           <div className="grid gap-0.5 border-t px-3 py-2">
             <p className="text-xs font-medium">{label}</p>
             <p className="font-mono text-xs text-muted-foreground">{token}</p>
           </div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+function FoundationTokenGrid() {
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {FOUNDATION_TOKEN_GROUPS.map((group) => (
+        <Card key={group.label}>
+          <CardHeader><CardTitle>{group.label}</CardTitle></CardHeader>
+          <CardContent className="grid gap-3">
+            {group.tokens.map(([label, token]) => (
+              <div key={token} className="flex items-center justify-between gap-4 border-b pb-3 last:border-0 last:pb-0">
+                <div>
+                  <p className="text-sm font-medium">{label}</p>
+                  <p className="font-mono text-xs text-muted-foreground">{token}</p>
+                </div>
+                {group.label === "Radius" ? (
+                  <span className="size-10 border bg-muted" style={{ borderRadius: `var(${token})` }} />
+                ) : group.label === "Elevation" ? (
+                  <span className="size-10 rounded-md bg-card" style={{ boxShadow: `var(${token})` }} />
+                ) : group.label === "Icon size" ? (
+                  <Sparkles aria-hidden="true" style={{ width: `var(${token})`, height: `var(${token})` }} />
+                ) : (
+                  <span className="font-mono text-xs text-muted-foreground">var({token})</span>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       ))}
     </div>
   );
@@ -125,7 +131,6 @@ export function DesignCatalogue() {
                 Primitive tokens become semantic roles. The catalogue imports the same components product routes use and renders their key states.
               </p>
             </div>
-            <Button><Plus className="size-4" />New pattern</Button>
           </div>
         </div>
       </div>
@@ -148,6 +153,10 @@ export function DesignCatalogue() {
               <TokenGrid />
             </section>
             <section className="grid gap-4">
+              <div><h2 className="text-xl font-semibold">Foundation tokens</h2><p className="mt-1 text-sm text-muted-foreground">The complete radius, elevation, motion, and icon-size contracts.</p></div>
+              <FoundationTokenGrid />
+            </section>
+            <section className="grid gap-4">
               <h2 className="text-xl font-semibold">Both themes</h2>
               <div className="grid gap-4 lg:grid-cols-2"><ThemeSpecimen mode="light" /><ThemeSpecimen mode="dark" /></div>
             </section>
@@ -158,7 +167,7 @@ export function DesignCatalogue() {
             <section className="grid gap-4">
               <div><h2 className="text-xl font-semibold">Closed type scale</h2><p className="mt-1 text-sm text-muted-foreground">Five sizes. Anything off the scale (text-lg, text-3xl and larger) fails lint in product code.</p></div>
               <Card><CardContent className="grid gap-5 py-6">
-                {typeScale.map(([className, name, note]) => (
+                {TYPE_SCALE.map(({ className, name, note }) => (
                   <div key={className} className="flex flex-col gap-1 border-b pb-4 last:border-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
                     <p className={`${className} font-semibold tracking-tight`}>{name}</p>
                     <p className="font-mono text-xs text-muted-foreground">{className} · {note}</p>

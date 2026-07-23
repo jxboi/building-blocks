@@ -29,16 +29,25 @@ import {
 
 export type NavigationScope = "workspace" | "user" | "organisation" | "admin";
 
+export type NavigationSubItem = {
+  id: string;
+  labelKey: `nav.${string}`;
+  href: string | ((workspace: string) => string);
+  badge?: string;
+};
+
 export type NavigationItem = {
   id: string;
   labelKey: `nav.${string}`;
-  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean; strokeWidth?: number }>;
   href: string | ((workspace: string) => string);
   scope: NavigationScope;
   featureKey?: string;
   permission?: string;
   helpUrl?: string;
   shortcut?: string;
+  badge?: string;
+  children?: readonly NavigationSubItem[];
 };
 
 const docsBase = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.example.com";
@@ -46,10 +55,38 @@ const docsBase = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.example.com";
 export const navigationRegistry: readonly NavigationItem[] = [
   { id: "overview", labelKey: "nav.overview", icon: PanelsTopLeft, href: (workspace) => `/${workspace}`, scope: "workspace", permission: "workspace.view", shortcut: "g o", helpUrl: `${docsBase}/overview` },
   { id: "search", labelKey: "nav.search", icon: Search, href: (workspace) => `/${workspace}/search`, scope: "workspace", permission: "workspace.search", shortcut: "g s", helpUrl: `${docsBase}/search` },
-  { id: "notifications", labelKey: "nav.notifications", icon: Bell, href: (workspace) => `/${workspace}/notifications`, scope: "workspace", shortcut: "g n" },
+  { id: "notifications", labelKey: "nav.notifications", icon: Bell, href: (workspace) => `/${workspace}/notifications`, scope: "workspace", shortcut: "g n", badge: "3" },
   { id: "messages", labelKey: "nav.messages", icon: MessageSquareText, href: (workspace) => `/${workspace}/messages`, scope: "workspace", featureKey: "messages" },
-  { id: "approvals", labelKey: "nav.approvals", icon: FileCheck2, href: (workspace) => `/${workspace}/approvals`, scope: "workspace", featureKey: "approvals", permission: "approvals.view" },
-  { id: "reports", labelKey: "nav.reports", icon: ChartNoAxesCombined, href: (workspace) => `/${workspace}/reports`, scope: "workspace", featureKey: "reports", permission: "reports.view" },
+  {
+    id: "approvals",
+    labelKey: "nav.approvals",
+    icon: FileCheck2,
+    href: (workspace) => `/${workspace}/approvals`,
+    scope: "workspace",
+    featureKey: "approvals",
+    permission: "approvals.view",
+    badge: "9",
+    children: [
+      { id: "approvals-pending", labelKey: "nav.approvalsPending", href: (workspace) => `/${workspace}/approvals#pending`, badge: "9" },
+      { id: "approvals-mine", labelKey: "nav.approvalsMine", href: (workspace) => `/${workspace}/approvals#mine` },
+      { id: "approvals-history", labelKey: "nav.approvalsHistory", href: (workspace) => `/${workspace}/approvals#history` },
+    ],
+  },
+  {
+    id: "reports",
+    labelKey: "nav.reports",
+    icon: ChartNoAxesCombined,
+    href: (workspace) => `/${workspace}/reports`,
+    scope: "workspace",
+    featureKey: "reports",
+    permission: "reports.view",
+    children: [
+      { id: "reports-overview", labelKey: "nav.reportsOverview", href: (workspace) => `/${workspace}/reports#overview` },
+      { id: "reports-funnels", labelKey: "nav.reportsFunnels", href: (workspace) => `/${workspace}/reports#funnels` },
+      { id: "reports-retention", labelKey: "nav.reportsRetention", href: (workspace) => `/${workspace}/reports#retention` },
+      { id: "reports-exports", labelKey: "nav.reportsExports", href: (workspace) => `/${workspace}/reports#exports`, badge: "New" },
+    ],
+  },
   { id: "profile", labelKey: "nav.profile", icon: CircleUserRound, href: "/settings/profile", scope: "user", permission: "settings.view" },
   { id: "security", labelKey: "nav.security", icon: ShieldCheck, href: "/settings/security", scope: "user", permission: "settings.view" },
   { id: "sessions", labelKey: "nav.sessions", icon: LockKeyhole, href: "/settings/sessions", scope: "user", permission: "settings.view" },

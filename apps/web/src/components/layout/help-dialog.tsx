@@ -16,6 +16,7 @@ import { Separator } from "@/components/ui/separator";
 const shortcuts = [
   ["Open command palette", "⌘ K"],
   ["Show shortcuts", "?"],
+  ["Collapse sidebar", "["],
   ["Go to overview", "G then O"],
   ["Go to search", "G then S"],
 ] as const;

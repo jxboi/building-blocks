@@ -7,6 +7,14 @@ function isProductFile(context) {
   return filename.includes("/src/") && !filename.includes("/src/components/ui/");
 }
 
+function isSourceFile(context) {
+  return context.filename.replaceAll("\\", "/").includes("/src/");
+}
+
+function isKitFile(context) {
+  return context.filename.replaceAll("\\", "/").includes("/src/components/kit/");
+}
+
 const designSystemRules = {
   "no-raw-interactive-elements": {
     meta: { type: "problem", messages: { raw: "Use the shared {{name}} primitive instead of a raw <{{name}> element." } },
@@ -57,6 +65,40 @@ const designSystemRules = {
       };
     },
   },
+  "no-off-scale-spacing": {
+    meta: { type: "problem", messages: { step: "Use a spacing step from the documented subset (0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12); see src/lib/design/scale.ts." } },
+    create(context) {
+      // Keep this set in sync with SPACING_STEPS in src/lib/design/scale.ts (parity-tested in scale.test.ts).
+      const allowed = new Set([0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 6, 8, 10, 12]);
+      // padding / margin / gap / space utilities with an optional variant (`md:`),
+      // important (`!`) or negative (`-`) prefix, capturing the numeric step.
+      const utility = /(?:^|[\s"'`:])!?-?(?:p[xytrblse]?|m[xytrblse]?|gap(?:-[xy])?|space-[xy])-(\d+(?:\.\d+)?)\b/g;
+      return {
+        Literal(node) {
+          if (!isProductFile(context) || typeof node.value !== "string") return;
+          for (const match of node.value.matchAll(utility)) {
+            if (!allowed.has(Number(match[1]))) {
+              context.report({ node, messageId: "step" });
+              break;
+            }
+          }
+        },
+      };
+    },
+  },
+  "no-off-scale-motion": {
+    meta: { type: "problem", messages: { raw: "Use --duration-fast, --duration-slow, and --ease-fluid instead of a raw motion utility." } },
+    create(context) {
+      return {
+        Literal(node) {
+          if (!isSourceFile(context) || typeof node.value !== "string") return;
+          if (/\bduration-\d+\b|\bease-(?:linear|in|out|in-out)\b/.test(node.value)) {
+            context.report({ node, messageId: "raw" });
+          }
+        },
+      };
+    },
+  },
   "no-mixed-icon-libraries": {
     meta: { type: "problem", messages: { mixed: "Use lucide-react or a registered product icon." } },
     create(context) {
@@ -64,8 +106,30 @@ const designSystemRules = {
         ImportDeclaration(node) {
           if (!isProductFile(context)) return;
           const source = String(node.source.value);
-          if (/react-icons|heroicons|phosphor|iconify/.test(source)) {
+          if (/react-icons|heroicons|phosphor|iconify|fontawesome|fortawesome|tabler\/icons|mui\/icons/.test(source)) {
             context.report({ node, messageId: "mixed" });
+          }
+        },
+        JSXOpeningElement(node) {
+          if (!isProductFile(context) || node.name.type !== "JSXIdentifier") return;
+          if (node.name.name === "svg") context.report({ node, messageId: "mixed" });
+        },
+      };
+    },
+  },
+  "no-hardcoded-kit-copy": {
+    meta: { type: "problem", messages: { raw: "Pass translated copy into the kit or read it from next-intl." } },
+    create(context) {
+      const translatedAttributes = new Set(["aria-label", "placeholder", "title", "alt"]);
+      return {
+        JSXText(node) {
+          if (!isKitFile(context) || !/[A-Za-z]/.test(node.value)) return;
+          context.report({ node, messageId: "raw" });
+        },
+        JSXAttribute(node) {
+          if (!isKitFile(context) || node.name.type !== "JSXIdentifier" || !translatedAttributes.has(node.name.name)) return;
+          if (node.value?.type === "Literal" && typeof node.value.value === "string" && /[A-Za-z]/.test(node.value.value)) {
+            context.report({ node, messageId: "raw" });
           }
         },
       };
@@ -107,7 +171,10 @@ export default defineConfig([
       "building-blocks/no-raw-img": "error",
       "building-blocks/no-off-scale-values": "error",
       "building-blocks/no-off-scale-typography": "error",
+      "building-blocks/no-off-scale-spacing": "error",
+      "building-blocks/no-off-scale-motion": "error",
       "building-blocks/no-mixed-icon-libraries": "error",
+      "building-blocks/no-hardcoded-kit-copy": "error",
       "building-blocks/no-raw-toast": "error",
       "building-blocks/no-hex-colors": "error",
     },

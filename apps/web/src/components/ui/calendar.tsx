@@ -2,11 +2,10 @@
 
 import * as React from "react"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
+import { useLocale, useTranslations } from "next-intl"
 
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-
-const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"] as const
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate())
@@ -36,14 +35,6 @@ function buildWeeks(month: Date) {
   return Array.from({ length: 6 }, (_, week) => cells.slice(week * 7, week * 7 + 7))
 }
 
-const monthFormat = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" })
-const fullFormat = new Intl.DateTimeFormat("en", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-})
-
 export type CalendarProps = {
   selected?: Date
   onSelect?: (date: Date) => void
@@ -54,6 +45,19 @@ export type CalendarProps = {
 }
 
 function Calendar({ selected, onSelect, defaultMonth, month: monthProp, onMonthChange, className }: CalendarProps) {
+  const locale = useLocale()
+  const t = useTranslations("calendar")
+  const monthFormat = React.useMemo(() => new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" }), [locale])
+  const fullFormat = React.useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "long", month: "long", day: "numeric", year: "numeric" }), [locale])
+  const weekdayFormat = React.useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "short" }), [locale])
+  const weekdayFullFormat = React.useMemo(() => new Intl.DateTimeFormat(locale, { weekday: "long" }), [locale])
+  const weekdays = React.useMemo(
+    () => Array.from({ length: 7 }, (_, index) => {
+      const day = new Date(2024, 0, index + 1)
+      return { short: weekdayFormat.format(day), full: weekdayFullFormat.format(day) }
+    }),
+    [weekdayFormat, weekdayFullFormat]
+  )
   const today = React.useMemo(() => startOfDay(new Date()), [])
   const [internalMonth, setInternalMonth] = React.useState(() => {
     const base = defaultMonth ?? selected ?? new Date()
@@ -110,24 +114,30 @@ function Calendar({ selected, onSelect, defaultMonth, month: monthProp, onMonthC
 
   const label = monthFormat.format(month)
 
+  function goToday() {
+    setMonth(new Date(today.getFullYear(), today.getMonth(), 1))
+    setFocusDate(today)
+    onSelect?.(today)
+  }
+
   return (
     <div className={cn("w-fit p-3", className)}>
       <div className="mb-2 flex items-center justify-between gap-2 px-1">
-        <Button variant="ghost" size="icon-sm" aria-label="Previous month" onClick={() => setMonth(addMonths(month, -1))}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("previousMonth")} onClick={() => setMonth(addMonths(month, -1))}>
           <ChevronLeftIcon className="size-4" />
         </Button>
         <div aria-live="polite" className="text-sm font-medium">
           {label}
         </div>
-        <Button variant="ghost" size="icon-sm" aria-label="Next month" onClick={() => setMonth(addMonths(month, 1))}>
+        <Button variant="ghost" size="icon-sm" aria-label={t("nextMonth")} onClick={() => setMonth(addMonths(month, 1))}>
           <ChevronRightIcon className="size-4" />
         </Button>
       </div>
       <div role="grid" aria-label={label} ref={gridRef} onKeyDown={onKeyDown} className="grid gap-0.5">
         <div role="row" className="grid grid-cols-7">
-          {WEEKDAYS.map((weekday) => (
-            <div key={weekday} role="columnheader" aria-label={weekday} className="flex h-8 items-center justify-center text-xs font-normal text-muted-foreground">
-              {weekday}
+          {weekdays.map((weekday) => (
+            <div key={weekday.full} role="columnheader" aria-label={weekday.full} className="flex h-8 items-center justify-center text-xs font-normal text-muted-foreground">
+              {weekday.short}
             </div>
           ))}
         </div>
@@ -171,6 +181,16 @@ function Calendar({ selected, onSelect, defaultMonth, month: monthProp, onMonthC
             })}
           </div>
         ))}
+      </div>
+      <div className="mt-2 border-t pt-2">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-full justify-center font-normal text-muted-foreground hover:text-foreground"
+          onClick={goToday}
+        >
+          {t("today")}
+        </Button>
       </div>
     </div>
   )

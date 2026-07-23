@@ -1,3 +1,5 @@
+import { useTranslations } from "next-intl";
+
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TableRowActions } from "@/components/kit/table-row-actions";
@@ -18,6 +20,7 @@ export function DataTable<Row extends { id: string }>({
   columns: readonly DataColumn<Row>[];
   rowActions?: readonly { label: string }[];
 }) {
+  const t = useTranslations("common");
   return (
     <>
       <Card className="hidden overflow-hidden py-0 md:block">
@@ -25,7 +28,7 @@ export function DataTable<Row extends { id: string }>({
           <TableHeader>
             <TableRow>
               {columns.map((column) => <TableHead key={column.id}>{column.header}</TableHead>)}
-              {rowActions.length ? <TableHead className="w-12"><span className="sr-only">Actions</span></TableHead> : null}
+              {rowActions.length ? <TableHead className="w-12"><span className="sr-only">{t("actions")}</span></TableHead> : null}
             </TableRow>
           </TableHeader>
           <TableBody>

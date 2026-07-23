@@ -10,7 +10,9 @@ import {
   oklchToLinearSrgb,
   parseOklch,
   parseThemes,
+  readSelectorTokens,
   relativeLuminance,
+  resolveToken,
 } from "./contrast";
 
 const css = readFileSync(path.join(process.cwd(), "src", "app", "globals.css"), "utf8");
@@ -44,6 +46,44 @@ describe("theme parsing", () => {
 
   it("inherits unoverridden primitives into the dark theme", () => {
     expect(dark.get("--primitive-ink-25")).toBe(light.get("--primitive-ink-25"));
+  });
+});
+
+describe("catalogue specimen themes mirror the app themes", () => {
+  // `.catalogue-light` / `.catalogue-dark` scope the side-by-side theme
+  // specimens on /design. `.catalogue-light` is a *separate* rule from `:root`
+  // (it must out-specify `.dark` for a light subtree nested in a dark page), so
+  // it is a hand-maintained copy that can silently drift. Assert it cannot.
+  const catalogueLight = readSelectorTokens(css, ".catalogue-light");
+  const catalogueDark = readSelectorTokens(css, ".catalogue-dark");
+
+  it("declares tokens for both specimens", () => {
+    expect(catalogueLight.size).toBeGreaterThan(0);
+    expect(catalogueDark.size).toBeGreaterThan(0);
+  });
+
+  it("resolves .catalogue-light identically to :root", () => {
+    const merged = new Map(light);
+    for (const [k, v] of catalogueLight) merged.set(k, v);
+    for (const key of catalogueLight.keys()) {
+      const rootVal = light.get(key);
+      expect(rootVal, `:root is missing ${key}`).toBeDefined();
+      expect(resolveToken(merged.get(key)!, merged), `catalogue-light ${key} drifted from :root`).toEqual(
+        resolveToken(rootVal!, light),
+      );
+    }
+  });
+
+  it("resolves .catalogue-dark identically to the dark theme", () => {
+    const merged = new Map(light);
+    for (const [k, v] of catalogueDark) merged.set(k, v);
+    for (const key of catalogueDark.keys()) {
+      const darkVal = dark.get(key);
+      expect(darkVal, `dark theme is missing ${key}`).toBeDefined();
+      expect(resolveToken(merged.get(key)!, merged), `catalogue-dark ${key} drifted from .dark`).toEqual(
+        resolveToken(darkVal!, dark),
+      );
+    }
   });
 });
 

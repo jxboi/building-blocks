@@ -1,6 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import {
@@ -33,6 +34,7 @@ export function ConfirmationDialog({
   onConfirm?: () => void;
 }) {
   const [value, setValue] = useState("");
+  const t = useTranslations("common");
   const allowed = !confirmationText || value === confirmationText;
 
   return (
@@ -53,7 +55,7 @@ export function ConfirmationDialog({
         </AlertDialogHeader>
         {confirmationText ? (
           <div className="grid gap-2">
-            <Label htmlFor="confirmation-text">Type {confirmationText} to confirm</Label>
+            <Label htmlFor="confirmation-text">{t("typeToConfirm", { value: confirmationText })}</Label>
             <Input
               id="confirmation-text"
               value={value}
@@ -63,9 +65,9 @@ export function ConfirmationDialog({
           </div>
         ) : null}
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
           <AlertDialogAction variant="destructive" disabled={!allowed} onClick={onConfirm}>
-            Confirm
+            {t("confirm")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

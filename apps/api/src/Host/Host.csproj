@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Shared build settings come from apps/api/Directory.Build.props. -->
+  <PropertyGroup>
+    <AssemblyName>BuildingBlocks.Host</AssemblyName>
+    <RootNamespace>BuildingBlocks.Host</RootNamespace>
+    <!-- Emit the OpenAPI document to the repo at build via the Swashbuckle CLI tool. -->
+    <OpenApiDocumentPath>$(MSBuildProjectDirectory)/../../openapi/v1.json</OpenApiDocumentPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Kernel\Kernel.csproj" />
+    <ProjectReference Include="..\Kernel.Contracts\Kernel.Contracts.csproj" />
+    <ProjectReference Include="..\Persistence\Persistence.csproj" />
+    <ProjectReference Include="..\Modules\Meta\Modules.Meta.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+</Project>

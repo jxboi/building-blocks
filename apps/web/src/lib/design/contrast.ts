@@ -104,6 +104,19 @@ export function resolveToken(value: string, vars: VarMap, depth = 0): { l: numbe
   return parseOklch(value);
 }
 
+/**
+ * Read the token declarations from the first rule whose selector list contains
+ * `selector` (e.g. `:root`, `.catalogue-light`). Comments are stripped first so
+ * a colon inside `/* … *​/` is not mistaken for a declaration. Used to verify
+ * that the catalogue's hand-maintained specimen themes have not drifted from the
+ * real `:root` / `.dark` themes.
+ */
+export function readSelectorTokens(css: string, selector: string): VarMap {
+  const clean = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return readBlock(clean, new RegExp(`${escaped}\\s*\\{([^}]*)\\}`));
+}
+
 /** Build resolved light/dark theme variable maps from `globals.css` contents. */
 export function parseThemes(css: string): { light: VarMap; dark: VarMap } {
   // Strip comments first: a colon inside `/* … */` would otherwise be mistaken
@@ -123,6 +136,10 @@ export type ContrastPair = {
   fg: string;
   /** Background token name it renders against. */
   bg: string;
+  /** Optional alpha when the background token is used as a tint. */
+  bgAlpha?: number;
+  /** Opaque surface beneath a tinted background. */
+  backdrop?: string;
   /** Minimum acceptable ratio: 4.5 for body/label text, 3 for UI fills/large text. */
   min: number;
 };
@@ -148,6 +165,18 @@ export const CONTRAST_PAIRS: readonly ContrastPair[] = [
   { label: "Warning accent", fg: "--warning", bg: "--background", min: 3 },
   { label: "Info accent", fg: "--info", bg: "--background", min: 3 },
   { label: "Primary accent", fg: "--primary", bg: "--background", min: 3 },
+  { label: "Error badge text", fg: "--destructive", bg: "--destructive", bgAlpha: 0.1, backdrop: "--background", min: 4.5 },
+  { label: "Success badge text", fg: "--success", bg: "--success", bgAlpha: 0.1, backdrop: "--background", min: 4.5 },
+  { label: "Warning badge text", fg: "--warning", bg: "--warning", bgAlpha: 0.1, backdrop: "--background", min: 4.5 },
+  { label: "Info badge text", fg: "--info", bg: "--info", bgAlpha: 0.1, backdrop: "--background", min: 4.5 },
+  { label: "Sidebar hover text", fg: "--sidebar-accent-foreground", bg: "--sidebar-accent", min: 4.5 },
+  // Chart series are graphical data marks (WCAG 1.4.11 non-text, 3:1) against
+  // the page background — a palette retune that dims one now fails CI.
+  { label: "Chart series 1", fg: "--chart-1", bg: "--background", min: 3 },
+  { label: "Chart series 2", fg: "--chart-2", bg: "--background", min: 3 },
+  { label: "Chart series 3", fg: "--chart-3", bg: "--background", min: 3 },
+  { label: "Chart series 4", fg: "--chart-4", bg: "--background", min: 3 },
+  { label: "Chart series 5", fg: "--chart-5", bg: "--background", min: 3 },
 ];
 
 export type ContrastResult = ContrastPair & { ratio: number; passes: boolean };
@@ -157,13 +186,16 @@ export function evaluatePairs(vars: VarMap): ContrastResult[] {
   return CONTRAST_PAIRS.map((pair) => {
     const fg = vars.get(pair.fg);
     const bg = vars.get(pair.bg);
+    const backdrop = pair.backdrop ? vars.get(pair.backdrop) : undefined;
     const fgColor = fg ? resolveToken(fg, vars) : null;
     const bgColor = bg ? resolveToken(bg, vars) : null;
-    if (!fgColor || !bgColor) {
+    const backdropColor = backdrop ? resolveToken(backdrop, vars) : null;
+    if (!fgColor || !bgColor || (pair.backdrop && !backdropColor)) {
       return { ...pair, ratio: 0, passes: false };
     }
-    // Backgrounds are opaque; a translucent foreground composites over it.
-    const bgRgb = oklchToLinearSrgb(bgColor);
+    const bgRgb = pair.bgAlpha === undefined
+      ? oklchToLinearSrgb(bgColor)
+      : flattenOver({ ...bgColor, alpha: pair.bgAlpha }, oklchToLinearSrgb(backdropColor!));
     const fgRgb = flattenOver(fgColor, bgRgb);
     const ratio = contrastRatioRgb(fgRgb, bgRgb);
     return { ...pair, ratio, passes: ratio >= pair.min };

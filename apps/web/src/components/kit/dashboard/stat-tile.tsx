@@ -19,7 +19,7 @@ export function StatTile({
   const TrendIcon = trend === "down" ? ArrowDownRight : ArrowUpRight;
 
   return (
-    <div className="group bg-card px-4 py-4 transition-colors duration-150 hover:bg-muted/25 sm:px-5">
+    <div className="group bg-card px-4 py-4 transition-colors duration-(--duration-fast) hover:bg-muted/25 sm:px-5">
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-medium text-muted-foreground">{label}</p>
         <Icon

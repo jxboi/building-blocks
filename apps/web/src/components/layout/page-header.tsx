@@ -19,7 +19,7 @@ export function PageHeader({
 }) {
   return (
     <div className="page-enter">
-      <div className="mx-auto max-w-6xl px-4 pb-5 pt-7 md:px-8 md:pb-7 md:pt-10">
+      <div className="mx-auto max-w-6xl px-4 pb-5 pt-8 md:px-8 md:pb-8 md:pt-10">
         {breadcrumbs?.length ? (
           <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-1 text-xs text-muted-foreground">
             {breadcrumbs.map((item, index) => (

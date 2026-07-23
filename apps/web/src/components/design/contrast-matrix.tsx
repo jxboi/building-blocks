@@ -7,7 +7,12 @@ function Row({ result }: { result: ContrastResult }) {
     <div className="flex items-center gap-3 rounded-md border bg-card px-3 py-2">
       <span
         className="flex size-9 shrink-0 items-center justify-center rounded-md border text-sm font-semibold"
-        style={{ backgroundColor: `var(${result.bg})`, color: `var(${result.fg})` }}
+        style={{
+          backgroundColor: result.bgAlpha === undefined
+            ? `var(${result.bg})`
+            : `color-mix(in srgb, var(${result.bg}) ${result.bgAlpha * 100}%, var(${result.backdrop}))`,
+          color: `var(${result.fg})`,
+        }}
         aria-hidden="true"
       >
         Aa

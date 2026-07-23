@@ -4,7 +4,7 @@ Companion to the design-system section of [nextjs/plan.md](../nextjs/plan.md) an
 
 ## Status (2026-07-22)
 
-Stages 1–3 and 5 are **built and verified** (lint, typecheck, 61 unit tests, e2e all green). Stage 4 is deferred by design (those kits land with their consuming modules). What shipped:
+Stages 1–3 and 5 are **built and verified** (lint, typecheck, 96 unit tests, production build, e2e all green). Stage 4 is deferred by design (those kits land with their consuming modules). What shipped:
 
 - **Stage 1 — token contract:** closed 5-size type scale (`xs/sm/base/xl/2xl`) with a `no-off-scale-typography` lint rule; documented spacing subset; live WCAG contrast matrix on `/design` backed by an OKLCH→sRGB parser of `globals.css` and a unit test (`src/lib/design/contrast.ts` + `contrast.test.ts`) so a token edit that breaks AA fails CI.
 - **Stage 2 — catalogue completeness + gate:** every `components/kit` component rendered from source in a registry-driven "Kit" tab; an exhaustiveness test (`catalogue-manifest.test.ts`) fails CI on any un-catalogued component; mobile axe + overflow e2e. Fixed a real a11y bug in `PageSkeleton` (roleless `aria-label`) that the catalogue surfaced.
@@ -19,14 +19,14 @@ Stages 1–3 and 5 are **built and verified** (lint, typecheck, 61 unit tests, e
 
 A polish pass drawing on Notion (warm neutral, content-first), Linear (refined type, monochrome depth, tabular numerals), and Apple (layered soft shadows, optical type, precise alignment). Done at the **token layer** so it propagates, staying disciplined about the brand-neutral monochrome identity (no accent hue introduced):
 
-- **Elevation:** reworked `--elevation-1/2/3` into layered warm-tinted shadows (tight contact + soft ambient) and added `--elevation-card` → `shadow-xs`. Cards, buttons (default/outline/secondary), and the metric strip now lift subtly off the page instead of reading flat.
+- **Elevation:** reworked the closed `--elevation-1/2/3` set into layered warm-tinted shadows (tight contact + soft ambient). Cards, buttons (default/outline/secondary), and the metric strip now lift subtly off the page instead of reading flat.
 - **Typography:** optical letter-spacing (`-0.006em` body, `-0.018em` headings), `font-optical-sizing`, grayscale smoothing. Switched dashboard `StatTile` values off `font-mono` to sans + `tabular-nums` (fixes awkward "3 . 4d" / "99 . 2%" spacing).
 - **Radius:** `--radius-panel` 0.625→0.6875rem for slightly softer panels while controls stay crisp.
 - **Catalogue:** token swatches now show the `--variable` name with a hover elevation.
 
 **Colour refinement:** retuned the semantic status palette in OKLCH for vividness and harmony — the biggest fix being **warning**, which read as muddy brown/olive (`0.47 0.12 75`) and is now a proper warm amber (`0.53 0.15 64`); success is fresher, info richer, destructive more vivid, with brighter dark-theme counterparts. Every value was probed against the badge/alert *text* use (colour-on-10%-tint) to stay ≥4.5:1 before applying, so the contrast test and axe still pass. Also reworked the **chart palette**: the primary series stays a confident neutral (elegant for single-series), but the second series is now a clear blue instead of a near-invisible grey, with a harmonious blue/amber/teal/violet categorical set for multi-series — both themes.
 
-All changes verified: contrast test (37), axe e2e (10), lint, typecheck, 61 unit green — no color-contrast or a11y regressions (elevation/type changes don't touch the semantic color layer; the new status colours were contrast-verified before applying).
+All changes verified: contrast suite, axe e2e, lint, typecheck, 96 unit tests, and production build green — no color-contrast or a11y regressions.
 
 ## Expanded control set (2026-07-22)
 
@@ -35,7 +35,17 @@ The primitive set had the overlay/menu family (dropdown-menu, select, popover, d
 - **checkbox** (incl. indeterminate), **radio-group**, **switch**, **toggle** + **toggle-group** (cva variants), **slider** (single + range), **button-group** (segments any-size buttons via attribute-scoped radius overrides).
 - **calendar** — hand-rolled (no `react-day-picker`): a `role="grid"` month view with roving-tabindex arrow-key navigation, today marker, and **disabled** outside-month days (so they can stay faint without failing axe contrast). **date-picker** (Popover + Calendar) and **time-picker** (hour/minute selects) compose on top.
 
-A new **Controls tab** on `/design` showcases every control in its states, both themes, each with a real label/`aria-label`. New e2e test drives the tab and runs axe over it (caught and fixed: a slider thumb needing a name, a Select combobox needing a label, and the calendar's faint outside days). The 5-tab `TabsList` is wrapped in a horizontal-scroll container so it never overflows at mobile width. Verified: lint, typecheck, 61 unit, full e2e (incl. new controls-axe + mobile-overflow) green.
+A new **Controls tab** on `/design` showcases every control in its states, both themes, each with a real label/`aria-label`. New e2e test drives the tab and runs axe over it (caught and fixed: a slider thumb needing a name, a Select combobox needing a label, and the calendar's faint outside days). The 5-tab `TabsList` is wrapped in a horizontal-scroll container so it never overflows at mobile width. Verified: lint, typecheck, 96 unit tests, production build, and full e2e (incl. controls axe + mobile overflow) green.
+
+## Sufficiency review closure (2026-07-22)
+
+- `FormField` now connects description and error IDs to its matching control automatically, preserving pre-existing `aria-describedby`; regression tests cover single- and multi-child compositions.
+- Kit lifecycle coverage is explicit and machine-checked: every component records each default/loading/empty/error/disabled/permission state as either shown or not applicable with a reason. Collection examples now render loading, empty, error, and permission compositions; `FilterBar` has a real disabled state.
+- `/design` and the token snapshot share a complete token manifest for semantic colours, radius, elevation, motion, and icon sizes. Exhaustiveness tests fail if a CSS token is added without catalogue coverage.
+- Contrast checks now model the actual 10% tinted status badge/alert surfaces at the 4.5:1 text threshold. This caught and corrected the dark destructive token.
+- Motion utilities now consume the two duration tokens and shared easing token. Lint rejects raw duration/easing utilities, inline SVGs/known foreign icon libraries, and untranslated copy embedded in kit components. Shared status, filtering, confirmation, table, calendar, date, and time copy is sourced through `next-intl`.
+
+**Button-group UI pass:** the segment-join selector was `[data-slot=button]`, which missed split-button dropdown triggers (they carry `data-slot="dropdown-menu-trigger"`), leaving a visible gap; broadened to `[&>[data-slot]]` so any control joins cleanly. The catalogue example was mixing `secondary` (borderless) with `outline` segments, which broke the dividers — reworked to consistent `outline` segments with a border-preserving selected fill, and expanded to three forms: segmented single-select, split button (action + dropdown), and an icon toolbar.
 
 ## Current state (verified 2026-07-21)
 
@@ -89,11 +99,11 @@ These tier-2 kits have no real consumer yet; building them speculatively violate
 
 ## Closure (maps to build-order nextjs bullets)
 
-- [ ] Token architecture with light/dark **and contrast checks rendered in the catalogue** (Stage 1).
-- [ ] `/design` renders **every** token and kit component in all states, both themes, mobile width — enforced by the exhaustiveness test and mobile axe run (Stage 2).
-- [ ] Lint rules active including the closed type scale (Stage 1).
-- [ ] Playwright axe baseline + mobile-width checks green, including `/design` (Stage 2).
-- [ ] Deferred kits tracked against their phases with the same-PR catalogue rule recorded (Stage 4).
+- [x] Token architecture with light/dark **and contrast checks rendered in the catalogue** (Stage 1).
+- [x] `/design` renders **every** token and kit component with explicit state coverage, both themes, mobile width — enforced by the exhaustiveness test and mobile axe run (Stage 2).
+- [x] Lint rules active including the closed type and motion scales (Stage 1).
+- [x] Playwright axe baseline + mobile-width checks green, including `/design` (Stage 2).
+- [x] Deferred kits tracked against their phases with the same-PR catalogue rule recorded (Stage 4).
 
 ## Suggested order & sizing
 

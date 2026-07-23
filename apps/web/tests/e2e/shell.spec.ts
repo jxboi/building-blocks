@@ -18,6 +18,13 @@ test("demo shell is accessible at mobile width", async ({ page }, testInfo) => {
   await expect(page.getByRole("button", { name: "Open navigation" })).toBeVisible();
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
   expect(overflow).toBe(false);
+
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  const navigationDialog = page.getByRole("dialog", { name: "Open navigation" });
+  await expect(navigationDialog).toBeVisible();
+  await expect(navigationDialog.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
+  await expect(navigationDialog.getByRole("button", { name: "Collapse sidebar" })).toHaveCount(0);
+
   const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations).toEqual([]);
 });
@@ -29,6 +36,31 @@ test("demo shell command palette opens without leaving the page", async ({ page 
   await expect(page.getByRole("dialog", { name: "Open command palette" })).toBeVisible();
   await expect(page.getByRole("combobox")).toBeFocused();
   await expect(page).toHaveURL(/\/demo$/);
+});
+
+test("demo sidebar identifies the current workspace view", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "chromium");
+  await page.goto("/demo");
+
+  await expect(page.getByText("Building Blocks", { exact: true })).toHaveCount(0);
+
+  const overviewLink = page.getByRole("link", { name: "Overview" });
+  await expect(overviewLink).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("Workspace", { exact: true })).toBeVisible();
+
+  await overviewLink.click({ button: "right" });
+  await expect(page.getByRole("menu")).toHaveCount(0);
+
+  const approvalsRow = page.getByRole("button", { name: "Expand Approvals" });
+  await approvalsRow.click();
+  await expect(page.getByRole("link", { name: "Pending 9" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Collapse Approvals" })).toBeVisible();
+
+  const collapseSidebar = page.getByRole("button", { name: "Collapse sidebar" });
+  await expect(collapseSidebar.locator("..").getByRole("button", { name: /Product/ })).toBeVisible();
+  await collapseSidebar.click();
+  await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Overview" })).toHaveAttribute("aria-current", "page");
 });
 
 test("demo controls communicate selected and temporary states", async ({ page }, testInfo) => {

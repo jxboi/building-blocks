@@ -1,0 +1,32 @@
+# Dev-tier infrastructure. This file owns the Postgres service (postgresql plan,
+# milestone 1); the full offline stack (API, Web, MinIO, Mailpit) is composed by
+# the docker-deployment plan, which extends this. Bring up just the database with:
+#   docker compose -f infra/docker-compose.yml up -d postgres
+name: building-blocks
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bb-postgres
+    # pg_stat_statements must be preloaded at server start; the init script then
+    # enables it as an extension (postgresql plan: slow-query visibility).
+    command: postgres -c shared_preload_libraries=pg_stat_statements
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-building_blocks}
+      POSTGRES_USER: ${POSTGRES_USER:-bb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bb_dev_password}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bb} -d ${POSTGRES_DB:-building_blocks}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+    name: bb-postgres-data

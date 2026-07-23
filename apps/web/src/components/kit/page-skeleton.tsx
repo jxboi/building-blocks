@@ -1,9 +1,12 @@
+import { useTranslations } from "next-intl";
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageSkeleton() {
+  const t = useTranslations("common");
   return (
-    <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:px-8" role="status" aria-busy="true" aria-label="Loading page">
+    <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:px-8" role="status" aria-busy="true" aria-label={t("loadingPage")}>
       <div className="space-y-3">
         <Skeleton className="h-4 w-32" />
         <Skeleton className="h-9 w-72 max-w-full" />

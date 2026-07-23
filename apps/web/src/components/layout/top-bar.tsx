@@ -7,8 +7,10 @@ import { useState } from "react";
 
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { useKeyboardShortcuts } from "@/components/layout/keyboard-shortcuts-provider";
+import { ModelSwitcher } from "@/components/layout/model-switcher";
 import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { NavigationScope } from "@/lib/navigation/registry";
@@ -16,9 +18,11 @@ import type { NavigationScope } from "@/lib/navigation/registry";
 export function TopBar({
   workspace,
   scopes,
+  activeNavigationId,
 }: {
   workspace: string;
   scopes: NavigationScope[];
+  activeNavigationId?: string;
 }) {
   const t = useTranslations();
   const { commandOpen, setCommandOpen, setHelpOpen } = useKeyboardShortcuts();
@@ -26,7 +30,7 @@ export function TopBar({
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border/70 bg-background/90 px-3 backdrop-blur-xl transition-colors duration-200 md:px-4">
+    <header className="sticky top-0 z-30 flex h-12 items-center gap-2 border-b border-border/70 bg-background/90 px-3 backdrop-blur-xl transition-colors duration-(--duration-slow) md:px-4">
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon-sm" className="md:hidden">
@@ -40,7 +44,9 @@ export function TopBar({
           <AppSidebar
             workspace={workspace}
             scopes={scopes}
+            activeNavigationId={activeNavigationId}
             onNavigate={() => setMobileOpen(false)}
+            collapsible={false}
           />
         </SheetContent>
       </Sheet>
@@ -61,6 +67,8 @@ export function TopBar({
       </Button>
 
       <div className="ml-auto flex items-center gap-1">
+        <ModelSwitcher />
+        <Separator orientation="vertical" className="mx-1 hidden h-5 sm:block" />
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="icon-sm" onClick={() => setHelpOpen(true)}>
@@ -79,8 +87,8 @@ export function TopBar({
               onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             >
               <span className="relative size-4" aria-hidden="true">
-                <Moon className="absolute inset-0 size-4 rotate-0 scale-100 transition-transform duration-200 ease-out dark:rotate-90 dark:scale-0" strokeWidth={1.8} />
-                <Sun className="absolute inset-0 size-4 -rotate-90 scale-0 transition-transform duration-200 ease-out dark:rotate-0 dark:scale-100" strokeWidth={1.8} />
+                <Moon className="absolute inset-0 size-4 rotate-0 scale-100 transition-transform duration-(--duration-slow) ease-(--ease-fluid) dark:rotate-90 dark:scale-0" strokeWidth={1.8} />
+                <Sun className="absolute inset-0 size-4 -rotate-90 scale-0 transition-transform duration-(--duration-slow) ease-(--ease-fluid) dark:rotate-0 dark:scale-100" strokeWidth={1.8} />
               </span>
               <span className="sr-only">{t("common.toggleTheme")}</span>
             </Button>

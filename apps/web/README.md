@@ -21,7 +21,7 @@ Open `/demo` for the public shell preview, `/design` for the development-only li
 - `src/components/ui` is generated shadcn source. Product code should compose `kit`, `layout`, and domain components rather than edit primitives ad hoc.
 - `src/lib/navigation/registry.ts` is the module registration seam for sidebar, command palette, permissions, feature gates, shortcuts, and help URLs.
 - `src/app/api/proxy/[...path]` is a transport-only BFF. It may translate the refresh cookie to an access-token header, stamp correlation headers, and stream the response. Business validation and data shaping belong in the API.
-- `openapi/shell.openapi.json` is the temporary standalone contract. Replace it with the .NET-generated OpenAPI document when the API module lands, then run `npm run api:generate`.
+- `openapi/v1.json` is the API's OpenAPI document, exported from the .NET Host (`apps/api/scripts/export-openapi.sh`) — the source of truth for the typed client. Regenerate the client with `npm run api:generate` after re-exporting.
 
 All authenticated product routes are dynamically rendered. The nonce-based CSP is generated per request in `src/proxy.ts`; proxy is an optimistic redirect layer, never the final authorization check.
 

@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Shared build settings come from apps/api/Directory.Build.props.
+       ASP.NET Core types flow transitively via the Kernel reference. -->
+  <ItemGroup>
+    <ProjectReference Include="..\..\Kernel\Kernel.csproj" />
+    <ProjectReference Include="..\..\Kernel.Contracts\Kernel.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

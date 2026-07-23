@@ -28,7 +28,7 @@ export function DateRangePicker() {
         >
           <CalendarDays className="size-3.5" strokeWidth={1.8} />
           <span key={range} className="state-enter">{range}</span>
-          <ChevronDown className="size-3 text-muted-foreground transition-transform duration-200 group-data-[state=open]/button:rotate-180" strokeWidth={1.8} />
+          <ChevronDown className="size-3 text-muted-foreground transition-transform duration-(--duration-slow) group-data-[state=open]/button:rotate-180" strokeWidth={1.8} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">

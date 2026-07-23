@@ -9,7 +9,7 @@ export default async function ForbiddenPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-4 py-12">
       <div className="max-w-md text-center">
-        <span className="mx-auto mb-6 flex size-14 items-center justify-center rounded-lg border bg-card shadow-sm">
+        <span className="mx-auto mb-6 flex size-14 items-center justify-center rounded-lg border bg-card">
           <ShieldX className="size-6 text-destructive" aria-hidden="true" />
         </span>
         <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">403</p>

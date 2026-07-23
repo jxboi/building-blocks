@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useTranslations } from "next-intl"
 
 import {
   Select,
@@ -24,11 +25,12 @@ function TimePicker({
   className?: string
 }) {
   const [hour, minute] = value.split(":")
+  const t = useTranslations("calendar")
 
   return (
     <div className={cn("inline-flex items-center gap-1.5", className)}>
       <Select value={hour} onValueChange={(next) => onChange?.(`${next}:${minute}`)}>
-        <SelectTrigger className="w-16 justify-center" aria-label="Hour">
+        <SelectTrigger className="w-16 justify-center" aria-label={t("hour")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="min-w-16">
@@ -41,7 +43,7 @@ function TimePicker({
       </Select>
       <span className="text-sm text-muted-foreground">:</span>
       <Select value={minute} onValueChange={(next) => onChange?.(`${hour}:${next}`)}>
-        <SelectTrigger className="w-16 justify-center" aria-label="Minute">
+        <SelectTrigger className="w-16 justify-center" aria-label={t("minute")}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent className="min-w-16">

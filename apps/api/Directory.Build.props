@@ -1,0 +1,30 @@
+<Project>
+  <!--
+    Shared build settings for every project in apps/api.
+    Master plan convention: nullable enabled, warnings as errors, analyzers on.
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <!--
+      CA1716 (name conflicts with a VB/F# keyword) and CA1711 ('Delegate' suffix)
+      are cross-language public-library design rules. This is an internal .NET-only
+      modular monolith, and 'Error' is the idiomatic Result-pattern name.
+      CA1725 (match base parameter names) fights the messaging convention where
+      handlers name their input 'command'/'query' rather than the generic
+      interface name 'message' — the domain name is deliberately clearer.
+      Everything else stays warnings-as-errors.
+    -->
+    <NoWarn>$(NoWarn);CA1716;CA1711;CA1725</NoWarn>
+  </PropertyGroup>
+
+  <!-- Test projects additionally relax CA1707 (underscores in test method names) —
+       set in each test .csproj, since IsTestProject is not yet defined here. -->
+</Project>
